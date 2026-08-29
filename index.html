@@ -1,0 +1,738 @@
+<!-- index.html -->
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Đào Vàng Telegram</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="//libtl.com/sdk.js" data-zone="11680006" data-sdk="show_11680006"></script>
+    <script src="./monetag.js"></script>
+
+    <style>
+        :root {
+            --bg-color: #f5f0e6;
+            --main-brown: #5c3a21;
+            --accent-orange: #d97706;
+            --card-bg: #fffdf9;
+            --btn-green: #16a34a;
+            --text-dark: #292524;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); padding-bottom: 70px; }
+        
+        .header {
+            background-color: var(--main-brown);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .page { display: none; padding: 15px; }
+        .page.active { display: block; }
+
+        .card {
+            background: var(--card-bg);
+            border: 2px solid #e7d7c1;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+        .card-title { font-size: 15px; font-weight: bold; color: var(--main-brown); margin-bottom: 10px; }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e7d7c1;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            background: #fff;
+        }
+        .btn {
+            background-color: var(--btn-green);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn-orange { background-color: var(--accent-orange); }
+        .btn-row { display: flex; gap: 10px; }
+
+        /* Task grid style matching design */
+        .task-grid { display: flex; gap: 10px; margin-bottom: 10px; }
+        .task-box {
+            flex: 1;
+            background: #fff;
+            border: 2px solid #e7d7c1;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .task-box:hover { border-color: var(--accent-orange); }
+        
+        .task-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            border: 2px solid #e7d7c1;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 2px solid #e7d7c1;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-align: center;
+            font-size: 11px;
+            color: #78716c;
+            cursor: pointer;
+            flex: 1;
+        }
+        .nav-item.active { color: var(--accent-orange); font-weight: bold; }
+        .nav-item div:first-child { font-size: 18px; margin-bottom: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <span>🔨 Mỏ Vàng Telegram</span>
+        <div class="stats-bar">
+            <span>🪙 <span id="goldCount">0</span></span>
+            <span>💵 <span id="vndCount">0</span> VNĐ</span>
+        </div>
+    </div>
+
+    <!-- TRANG 1: ĐÀO VÀNG & ĐỔI THƯỞNG -->
+    <div id="page1" class="page active">
+        <div class="card" style="text-align: center;">
+            <div class="card-title">Khu Vực Đào Vàng</div>
+            <p style="margin-bottom: 15px; font-size: 14px; color: #555;">Bấm bắt đầu để tự động đào trong 60 phút nhận 20.000 vàng.</p>
+            <div class="btn-row">
+                <button class="btn" id="startMiningBtn" onclick="startMining()">Bắt Đầu Đào</button>
+                <button class="btn btn-orange" onclick="openExchange()">Đổi Vàng</button>
+            </div>
+            <p id="miningStatus" style="margin-top: 10px; font-weight: bold; color: var(--accent-orange);"></p>
+        </div>
+        <div class="card">
+            <div class="card-title">Quy Tắc Đổi Thưởng</div>
+            <p style="font-size: 13px; line-height: 1.5;">- Tỷ giá: 20.000 Vàng = 5 VNĐ.<br>- Số lượng đổi tối thiểu: 2.000.000 Vàng.</p>
+        </div>
+    </div>
+
+    <!-- TRANG 2: GIFTCODE & LINK4M -->
+    <div id="page2" class="page">
+        <div class="card">
+            <div class="card-title">Phiếu Vật Phẩm (Giftcode)</div>
+            <input type="text" id="giftcodeInput" placeholder="Nhập mã giftcode...">
+            <button class="btn" onclick="useGiftcode()">Sử Dụng</button>
+        </div>
+
+        <!-- KHU VỰC NÀY CHỈ HIỂN THỊ CHO ADMIN -->
+        <div class="card" id="adminSection" style="display:none;">
+            <div class="card-title">🔐 Khu vực quản trị</div>
+            <div style="font-weight:bold; margin-bottom:8px;">Tạo Giftcode</div>
+            <input type="text" id="newCodeName" placeholder="Tên mã code...">
+            <button class="btn btn-orange" onclick="createGiftcode()">Tạo Code (Tối đa 30 lượt, Hạn 24h)</button>
+            <hr style="border:none; border-top:1px solid #e7d7c1; margin:18px 0;">
+            <div style="font-weight:bold; margin-bottom:8px;">Tạo nhiệm vụ tham gia nhóm</div>
+            <input type="text" id="adminTaskName" placeholder="Tên nhiệm vụ...">
+            <input type="text" id="adminTaskLink" placeholder="Link nhóm Telegram (https://t.me/...)">
+            <input type="number" id="adminTaskReward" min="1" placeholder="Số vàng thưởng cho mỗi người">
+            <button class="btn btn-orange" onclick="createJoinTask()">Tạo nhiệm vụ</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Vượt Link Nhận Thưởng</div>
+            <p style="font-size: 13px; margin-bottom: 10px;">Vượt link Link4m để lấy mã nhận 100 VNĐ (Cooldown 20 phút).</p>
+            <a href="https://link4m.co/example" target="_blank" class="btn btn-orange" style="display:block; text-decoration:none; margin-bottom: 10px;" onclick="startLinkTask()">Lấy Link Vượt</a>
+            <input type="text" id="linkCodeInput" placeholder="Nhập mã sau khi vượt link...">
+            <button class="btn" onclick="submitLinkCode()">Xác Nhận Nhận 100 VNĐ</button>
+        </div>
+    </div>
+
+    <!-- TRANG 3: NHIỆM VỤ (CHUẨN GIAO DIỆN ẢNH MẪU) -->
+    <div id="page3" class="page">
+        <div class="card">
+            <div class="card-title">📺 Xem Khảo Sát Kỹ Thuật</div>
+            <div class="task-grid">
+                <div class="task-box" onclick="doAdTask(3000, 'gold')">
+                    <div style="font-size: 20px; margin-bottom: 5px;">📄</div>
+                    <div style="font-weight: bold; font-size: 13px;">Nhận Vàng</div>
+                    <div style="color: var(--btn-green); font-weight: bold; margin-top: 4px;">+3.000</div>
+                </div>
+                <div class="task-box" onclick="doAdTask(1, 'vnd')">
+                    <div style="font-size: 20px; margin-bottom: 5px;">⚙️</div>
+                    <div style="font-weight: bold; font-size: 13px;">Nhận VNĐ</div>
+                    <div style="color: var(--accent-orange); font-weight: bold; margin-top: 4px;">+1 VNĐ</div>
+                </div>
+            </div>
+            <p style="font-size: 11px; color: #d97706; text-align: center; margin-top: 8px;">⚠️ Xem khảo sát tầm 5s để nhận thưởng!</p>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Nhiệm Vụ Thành Viên & Chiêu Mộ</div>
+            
+            <div class="task-item-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 13px;">Chiêu mộ 5 đồng bọn</div>
+                    <div style="font-size: 12px; color: #16a34a;">+20.000 Vàng</div>
+                </div>
+                <button class="btn btn-orange" style="width: 90px; padding: 8px; font-size: 12px;" onclick="claimMilestone(5)">Nhận</button>
+            </div>
+
+            <div class="task-item-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 13px;">Tổ đội 10 thành viên</div>
+                    <div style="font-size: 12px; color: #16a34a;">+50.000 Vàng</div>
+                </div>
+                <button class="btn btn-orange" style="width: 90px; padding: 8px; font-size: 12px;" onclick="claimMilestone(10)">Nhận</button>
+            </div>
+
+            <div class="task-item-row">
+                <div>
+                    <div style="font-weight: bold; font-size: 13px;">Tổ đội 20 thành viên</div>
+                    <div style="font-size: 12px; color: #16a34a;">+150.000 Vàng</div>
+                </div>
+                <button class="btn" style="width: 90px; padding: 8px; font-size: 12px;" onclick="claimMilestone(20)">Nhận</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Nhiệm Vụ Tham Gia Nhóm</div>
+            <p style="font-size:12px; color:#666; margin-bottom:10px;">Chỉ nhận thưởng sau khi hệ thống xác minh bạn đã tham gia nhóm thành công.</p>
+            <div id="joinTaskList"><p style="font-size:13px; color:#666;">Chưa có nhiệm vụ.</p></div>
+        </div>
+    </div>
+
+    <!-- TRANG 4: CHIÊU MỘ THỢ (REF DÙNG ID THỰC TẾ) -->
+    <div id="page4" class="page">
+        <div class="card">
+            <div class="card-title">Hệ Thống Chiêu Mộ Thợ Mới</div>
+            <p style="font-size: 13px; margin-bottom: 10px;">Mời 1 thợ mới nhận 15.000 vàng.</p>
+            <input type="text" id="refLink" readonly>
+            <button class="btn" onclick="copyRef()">Sao Chép Link Giới Thiệu</button>
+        </div>
+        <div class="card">
+            <div class="card-title">Danh Sách Thợ Chờ Nhận Thưởng (Chống Buff Ref)</div>
+            <p style="font-size: 12px; color: #666;">Yêu cầu: Tài khoản ref phải xem đủ 6 video và hoạt động trong 2 ngày mới được duyệt.</p>
+            <div id="refList" style="margin-top: 10px; font-size: 13px;">
+                <p>👤 User_Ref99 (Đang chờ: Xem 2/6 video, Hoạt động 1/2 ngày)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- TRANG 5: RÚT TIỀN (CHUẨN MẪU ẢNH) -->
+    <div id="page5" class="page">
+        <div class="card">
+            <div class="card-title">Nhà Máy In Giấy / Rút Tiền</div>
+            
+            <label style="font-size: 12px; font-weight: bold;">TÊN ĐỐI TÁC (NGÂN HÀNG)</label>
+            <select id="bankName">
+                <option value="">nhập ngân hàng</option>
+                <option value="VCB">Vietcombank</option>
+                <option value="TCB">Techcombank</option>
+                <option value="MB">MB Bank</option>
+                <option value="ACB">ACB</option>
+            </select>
+
+            <label style="font-size: 12px; font-weight: bold;">MÃ HỢP ĐỒNG (STK)</label>
+            <input type="text" id="bankAcc" placeholder="Nhập số tài khoản...">
+
+            <label style="font-size: 12px; font-weight: bold;">NGƯỜI ĐẠI DIỆN (TÊN TK)</label>
+            <input type="text" id="bankOwner" placeholder="NGUYEN VAN A">
+
+            <label style="font-size: 12px; font-weight: bold;">KHỐI LƯỢNG VÀNG MUỐN XUẤT</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="withdrawGold" placeholder="0" oninput="calculateWithdraw()">
+                <button class="btn btn-orange" style="width: 120px; height: 45px;" onclick="setAllGold()">TẤT CẢ</button>
+            </div>
+
+            <div style="background: #e6f4ea; padding: 12px; border-radius: 8px; margin-bottom: 15px; color: #137333; font-weight: bold;">
+                Giá trị quy đổi: <span id="withdrawVndPreview">0</span> VNĐ
+            </div>
+
+            <button class="btn" style="background-color: var(--btn-green);" onclick="submitWithdraw()">XÁC NHẬN XUẤT XƯỞNG</button>
+        </div>
+    </div>
+
+    <!-- THANH ĐIỀU HƯỚNG 5 TAB -->
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab(1)"><div>🏭</div>Nhà Máy</div>
+        <div class="nav-item" onclick="switchTab(2)"><div>🎁</div>Vật Phẩm</div>
+        <div class="nav-item" onclick="switchTab(3)"><div>📋</div>Công Việc</div>
+        <div class="nav-item" onclick="switchTab(4)"><div>👥</div>Tuyển Dụng</div>
+        <div class="nav-item" onclick="switchTab(5)"><div>🚚</div>Xuất Xưởng</div>
+    </div>
+
+    <script>
+        const ADMIN_ID = 7496441289;
+
+        let userData = {
+            gold: 0,
+            vnd: 0,
+            telegramId: window.Telegram?.WebApp?.initDataUnsafe?.user?.id || ADMIN_ID,
+            qualifiedRefCount: 0,
+            claimedMilestones: []
+        };
+
+        const isAdmin = Number(userData.telegramId) === ADMIN_ID;
+
+        // Gán link ref tự động theo ID thực tế của người chơi
+        document.getElementById('refLink').value = `https://t.me/BotDaoVang_bot?start=${encodeURIComponent(userData.telegramId)}`;
+
+        function updateUI() {
+            document.getElementById('goldCount').innerText = userData.gold.toLocaleString();
+            document.getElementById('vndCount').innerText = userData.vnd.toLocaleString();
+            
+            document.getElementById('adminSection').style.display = isAdmin ? 'block' : 'none';
+        }
+        updateUI();
+
+        function switchTab(index) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page' + index).classList.add('active');
+            document.querySelectorAll('.nav-item')[index - 1].classList.add('active');
+        }
+
+        // Đào vàng chuẩn 60 phút (3600 giây)
+        function startMining() {
+            let btn = document.getElementById('startMiningBtn');
+            btn.disabled = true;
+            let timeLeft = 60 * 60; // 60 phút
+            let status = document.getElementById('miningStatus');
+            
+            let timer = setInterval(() => {
+                let minutes = Math.floor(timeLeft / 60);
+                let seconds = timeLeft % 60;
+                status.innerText = `Đang tự đào... Còn ${minutes} phút ${seconds} giây`;
+                timeLeft--;
+                
+                if(timeLeft < 0) {
+                    clearInterval(timer);
+                    userData.gold += 20000;
+                    updateUI();
+                    status.innerText = "Đã hoàn thành! Nhận được 20.000 vàng.";
+                    btn.disabled = false;
+                }
+            }, 1000);
+        }
+
+        function openExchange() {
+            if(userData.gold < 2000000) {
+                alert("Cần tối thiểu 2.000.000 vàng để đổi!");
+                return;
+            }
+            let exchangeVnd = Math.floor(userData.gold / 20000) * 5;
+            userData.vnd += exchangeVnd;
+            userData.gold = userData.gold % 20000;
+            updateUI();
+            alert(`Đổi thành công ${exchangeVnd} VNĐ!`);
+        }
+
+        // Giftcode lưu localStorage để test trên cùng thiết bị.
+        // Khi nhiều người dùng thật cần backend/database.
+        let mockCodes = JSON.parse(localStorage.getItem("mockCodes") || "null") || {};
+
+        function saveMockCodes() {
+            localStorage.setItem("mockCodes", JSON.stringify(mockCodes));
+        }
+
+        function createGiftcode() {
+            if (!isAdmin) return alert("Bạn không có quyền tạo mã!");
+
+            const code = document.getElementById('newCodeName').value.trim().toUpperCase().replace(/\s+/g, "");
+            if (!code) return alert("Vui lòng nhập tên mã!");
+
+            mockCodes[code] = {
+                uses: 0,
+                maxUses: 30,
+                expiry: Date.now() + 86400000,
+                creator: Number(userData.telegramId)
+            };
+            saveMockCodes();
+            document.getElementById('newCodeName').value = "";
+            alert("Tạo giftcode thành công!");
+        }
+
+        function useGiftcode() {
+            const code = document.getElementById("giftcodeInput").value.trim().toUpperCase().replace(/\s+/g, "");
+            if (!code) return alert("Vui lòng nhập mã giftcode!");
+
+            let codeObj = mockCodes[code];
+            if (!codeObj || Date.now() > codeObj.expiry || codeObj.uses >= codeObj.maxUses) {
+                return alert("Code không tồn tại, đã hết hạn hoặc hết lượt!");
+            }
+            if (codeObj.creator === Number(userData.telegramId)) {
+                return alert("Người tạo code không thể tự nhận thưởng!");
+            }
+
+            MonetagReward("giftcode-" + code).then(() => {
+                codeObj = mockCodes[code];
+                if (!codeObj || Date.now() > codeObj.expiry || codeObj.uses >= codeObj.maxUses) {
+                    return alert("Code đã hết hạn hoặc hết lượt!");
+                }
+                codeObj.uses++;
+                saveMockCodes();
+
+                const reward = Math.floor(Math.random() * (40000 - 5000 + 1)) + 5000;
+                userData.gold += reward;
+                updateUI();
+                document.getElementById("giftcodeInput").value = "";
+                alert(`Nhập code thành công! Nhận được ${reward.toLocaleString()} vàng.`);
+            }).catch(() => {
+                alert("Quảng cáo không khả dụng hoặc chưa xem xong. Chưa nhận được thưởng.");
+            });
+        }
+
+        const LINK_COOLDOWN = 20 * 60 * 1000;
+        const AD_COOLDOWN = 15 * 60 * 1000;
+
+        const linkState = JSON.parse(
+            localStorage.getItem("linkState_" + userData.telegramId) || "null"
+        ) || {
+            code: null,
+            createdAt: 0,
+            claimed: false,
+            cooldownUntil: 0
+        };
+
+        function randomLinkCode() {
+            return "UQA" + Math.random().toString(36).slice(2, 10).toUpperCase() +
+                Math.floor(100 + Math.random() * 900);
+        }
+
+        function saveLinkState() {
+            localStorage.setItem(
+                "linkState_" + userData.telegramId,
+                JSON.stringify(linkState)
+            );
+        }
+
+        function formatTime(ms) {
+            const s = Math.max(0, Math.ceil(ms / 1000));
+            const m = Math.floor(s / 60);
+            const sec = s % 60;
+            return `${m} phút ${String(sec).padStart(2, "0")} giây`;
+        }
+
+        function renderLinkState() {
+            const btn = document.querySelector('[onclick="startLinkTask()"]');
+            if (!btn) return;
+
+            const remain = linkState.cooldownUntil - Date.now();
+            if (remain > 0) {
+                btn.style.pointerEvents = "none";
+                btn.style.opacity = "0.6";
+                btn.innerText = "Chờ " + formatTime(remain);
+            } else {
+                btn.style.pointerEvents = "auto";
+                btn.style.opacity = "1";
+                btn.innerText = "Lấy Link Vượt";
+            }
+        }
+
+        async function startLinkTask() {
+            if (linkState.cooldownUntil > Date.now()) {
+                alert("Bạn phải chờ đủ 20 phút trước khi vượt link tiếp.");
+                return;
+            }
+
+            // Mã chỉ được dùng nội bộ cho phiên hiện tại, không hiển thị ra alert/UI.
+            linkState.code = randomLinkCode();
+            linkState.createdAt = Date.now();
+            linkState.claimed = false;
+            saveLinkState();
+
+            const destination = `${location.origin}${location.pathname}?linkcode=${encodeURIComponent(linkState.code)}`;
+            const proxy = "/api/link4m?url=" + encodeURIComponent(destination);
+
+            try {
+                const r = await fetch(proxy);
+                if (!r.ok) throw new Error("Backend Link4m chưa được cấu hình.");
+
+                const data = await r.json();
+                if (!data.shortenedUrl) {
+                    throw new Error("Không nhận được link rút gọn.");
+                }
+
+                window.open(data.shortenedUrl, "_blank");
+            } catch (e) {
+                // Không được làm lộ mã nội bộ và cũng không cho phép nhận thưởng khi backend lỗi.
+                linkState.code = null;
+                linkState.createdAt = 0;
+                linkState.claimed = false;
+                saveLinkState();
+                alert("Không thể tạo link vượt lúc này. Vui lòng thử lại sau.");
+            }
+
+            renderLinkState();
+        }
+
+        function submitLinkCode() {
+            const input = document.getElementById("linkCodeInput").value.trim().toUpperCase();
+
+            if (!linkState.code) {
+                alert("Bạn chưa có lượt Link4m hợp lệ hoặc lượt đã hết hiệu lực.");
+                return;
+            }
+
+            if (linkState.claimed) {
+                alert("Mã này đã được sử dụng.");
+                return;
+            }
+
+            if (linkState.cooldownUntil > Date.now()) {
+                alert("Đang cooldown 20 phút.");
+                return;
+            }
+
+            if (input !== linkState.code) {
+                alert("Mã sai. Không được cộng tiền.");
+                return;
+            }
+
+            linkState.claimed = true;
+            linkState.cooldownUntil = Date.now() + LINK_COOLDOWN;
+            userData.vnd += 100;
+            saveLinkState();
+            updateUI();
+            document.getElementById("linkCodeInput").value = "";
+            renderLinkState();
+            alert("Xác nhận thành công! +100 VNĐ. Sau 20 phút mới được vượt tiếp.");
+        }
+
+        setInterval(renderLinkState, 1000);
+        renderLinkState();
+
+        function doAdTask(amount, type) {
+            userData.adCooldowns = userData.adCooldowns || {};
+            const until = Number(userData.adCooldowns[type] || 0);
+            if(until > Date.now()) {
+                alert("Nhiệm vụ đang cooldown. Còn " + formatTime(until-Date.now()));
+                return;
+            }
+            MonetagReward("task-" + type).then(() => {
+                if(type === 'gold') userData.gold += amount;
+                if(type === 'vnd') userData.vnd += amount;
+                userData.adCooldowns[type] = Date.now() + AD_COOLDOWN;
+                updateUI();
+                alert(`Hoàn thành nhiệm vụ! Nhận thành công ${amount.toLocaleString()} ${type === 'gold' ? 'Vàng' : 'VNĐ'}`);
+            }).catch(() => {
+                alert("Vui lòng xem hết quảng cáo để nhận thưởng!");
+            });
+        }
+
+        // NHIỆM VỤ THAM GIA NHÓM
+        const JOIN_TASK_STORAGE = "joinTasks";
+        let joinTasks = JSON.parse(localStorage.getItem(JOIN_TASK_STORAGE) || "[]");
+
+        function saveJoinTasks() {
+            localStorage.setItem(JOIN_TASK_STORAGE, JSON.stringify(joinTasks));
+        }
+
+        function escapeHtml(value) {
+            return String(value).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+        }
+
+        function createJoinTask() {
+            if (!isAdmin) return alert("Bạn không có quyền tạo nhiệm vụ!");
+
+            const name = document.getElementById("adminTaskName").value.trim();
+            const link = document.getElementById("adminTaskLink").value.trim();
+            const reward = Number(document.getElementById("adminTaskReward").value);
+
+            if (!name || !/^https:\/\/t\.me\//i.test(link) || !Number.isFinite(reward) || reward <= 0) {
+                return alert("Nhập đủ tên nhiệm vụ, link nhóm Telegram hợp lệ và số vàng lớn hơn 0.");
+            }
+
+            joinTasks.push({
+                id: "task_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7),
+                name: name,
+                link: link,
+                reward: Math.floor(reward)
+            });
+            saveJoinTasks();
+            renderJoinTasks();
+
+            document.getElementById("adminTaskName").value = "";
+            document.getElementById("adminTaskLink").value = "";
+            document.getElementById("adminTaskReward").value = "";
+            alert("Đã tạo nhiệm vụ.");
+        }
+
+        function renderJoinTasks() {
+            const box = document.getElementById("joinTaskList");
+            if (!box) return;
+
+            if (!joinTasks.length) {
+                box.innerHTML = '<p style="font-size:13px; color:#666;">Chưa có nhiệm vụ.</p>';
+                return;
+            }
+
+            box.innerHTML = joinTasks.map(task => `
+                <div class="task-item-row">
+                    <div style="min-width:0; padding-right:8px;">
+                        <div style="font-weight:bold; font-size:13px; word-break:break-word;">${escapeHtml(task.name)}</div>
+                        <div style="font-size:12px; color:#16a34a;">+${Number(task.reward).toLocaleString()} Vàng</div>
+                    </div>
+                    <div style="width:110px;">
+                        <button class="btn btn-orange" style="padding:8px; font-size:12px; margin-bottom:6px;" onclick="openJoinTask('${task.id}')">Tham gia</button>
+                        <button class="btn" style="padding:8px; font-size:12px;" onclick="claimJoinTask('${task.id}')">Nhận</button>
+                    </div>
+                </div>
+            `).join("");
+        }
+
+        function openJoinTask(taskId) {
+            const task = joinTasks.find(t => t.id === taskId);
+            if (!task) return alert("Nhiệm vụ không tồn tại.");
+            window.open(task.link, "_blank");
+        }
+
+        async function claimJoinTask(taskId) {
+            const task = joinTasks.find(t => t.id === taskId);
+            if (!task) return alert("Nhiệm vụ không tồn tại.");
+
+            const claimedKey = `claimedJoinTask_${userData.telegramId}_${taskId}`;
+            if (localStorage.getItem(claimedKey) === "1") {
+                return alert("Bạn đã nhận thưởng nhiệm vụ này rồi.");
+            }
+
+            // Backend phải dùng Bot API getChatMember để xác minh thật người chơi đã tham gia.
+            try {
+                const response = await fetch("/api/task-verify", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ taskId: task.id, telegramId: userData.telegramId })
+                });
+
+                if (!response.ok) throw new Error("verify_failed");
+                const result = await response.json();
+
+                if (!result || result.joined !== true) {
+                    return alert("Chưa hoàn thành nhiệm vụ! Hãy tham gia nhóm rồi thử lại.");
+                }
+
+                localStorage.setItem(claimedKey, "1");
+                userData.gold += Number(task.reward);
+                updateUI();
+                alert(`Hoàn thành nhiệm vụ! +${Number(task.reward).toLocaleString()} vàng.`);
+            } catch (error) {
+                alert("Chưa hoàn thành nhiệm vụ hoặc chưa thể xác minh việc tham gia nhóm. Hãy tham gia thành công rồi thử lại.");
+            }
+        }
+
+        renderJoinTasks();
+
+        function claimMilestone(count) {
+            const rewards = {
+                5: 20000,
+                10: 50000,
+                20: 150000,
+                50: 250000,
+                100: 500000
+            };
+
+            const qualifiedCount = Number(userData.qualifiedRefCount || 0);
+            userData.claimedMilestones = userData.claimedMilestones || [];
+
+            if (!rewards[count]) {
+                alert("Mốc thưởng không hợp lệ!");
+                return;
+            }
+
+            // Chưa đủ số người được duyệt thì tuyệt đối không cộng thưởng.
+            if (qualifiedCount < count) {
+                alert(`Chưa hoàn thành! Hiện có ${qualifiedCount}/${count} thợ đủ điều kiện.`);
+                return;
+            }
+
+            if (userData.claimedMilestones.includes(count)) {
+                alert("Mốc này đã nhận rồi!");
+                return;
+            }
+
+            userData.claimedMilestones.push(count);
+            userData.gold += rewards[count];
+            updateUI();
+            alert(`Nhận thưởng mốc ${count} thợ thành công: +${rewards[count].toLocaleString()} vàng!`);
+        }
+
+        function copyRef() {
+            navigator.clipboard.writeText(document.getElementById('refLink').value);
+            alert("Đã sao chép link giới thiệu!");
+        }
+
+        function calculateWithdraw() {
+            let g = parseInt(document.getElementById('withdrawGold').value || 0);
+            let vndVal = Math.floor(g / 20000) * 5;
+            document.getElementById('withdrawVndPreview').innerText = vndVal.toLocaleString();
+        }
+        function setAllGold() {
+            document.getElementById('withdrawGold').value = userData.gold;
+            calculateWithdraw();
+        }
+        function submitWithdraw() {
+            let bank = document.getElementById('bankName').value;
+            let acc = document.getElementById('bankAcc').value;
+            let owner = document.getElementById('bankOwner').value;
+            let g = parseInt(document.getElementById('withdrawGold').value || 0);
+
+            if(!bank || !acc || !owner || g <= 0) {
+                alert("Vui lòng điền đầy đủ thông tin rút tiền!");
+                return;
+            }
+            let vndVal = Math.floor(g / 20000) * 5;
+
+            // Số tiền rút tối thiểu: 20.000 VNĐ
+            if(vndVal < 20000) {
+                alert("Số tiền rút tối thiểu là 20.000 VNĐ!");
+                return;
+            }
+
+            if(userData.gold < g) {
+                alert("Số lượng vàng không đủ để xuất xưởng!");
+                return;
+            }
+            userData.gold -= g;
+            userData.vnd += vndVal;
+            updateUI();
+            alert("Gửi yêu cầu xuất xưởng thành công! Đang chờ duyệt.");
+        }
+    </script>
+</body>
+</html>
