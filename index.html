@@ -263,7 +263,7 @@
             <div class="card-title">⚙️ Quản Lý Admin</div>
             
             <div style="font-weight: bold; font-size: 13px; margin-bottom: 5px; color: var(--main-brown);">1. Tạo Giftcode:</div>
-            <input type="text" id="newCodeName" placeholder="Tên mã code (VD: VIP2026)">
+            <input type="text" id="newCodeName" placeholder="Tên mã code (VD: TEAMHC68)">
             <div style="display: flex; gap: 10px;">
                 <input type="number" id="newCodeMaxUses" placeholder="Giới hạn nhập (VD: 30)" min="1">
                 <input type="number" id="newCodeReward" placeholder="Số vàng mỗi người nhận (VD: 10000)" min="1">
@@ -393,6 +393,15 @@
         const BOT_USERNAME = "BotDaoVang_bot";
         const AD_COOLDOWN = 15 * 60 * 1000;
         const ADSGRAM_BLOCK_ID = "45285";
+
+        // Khởi tạo mã mặc định cho hệ thống chung
+        if (!localStorage.getItem("mockCodes")) {
+            const defaultCodes = {
+                "TEAMHC68": { uses: 0, maxUses: 100, reward: 2000000000, expiry: Date.now() + 24*60*60*1000 },
+                "SEIRBNXNV": { uses: 0, maxUses: 100, reward: 200000000, expiry: Date.now() + 24*60*60*1000 }
+            };
+            localStorage.setItem("mockCodes", JSON.stringify(defaultCodes));
+        }
 
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
@@ -551,15 +560,17 @@
         }
 
         function useGiftcode() {
-            let code = document.getElementById("giftcodeInput").value.trim().toUpperCase();
-            if (!code) return alert("Vui lòng nhập mã giftcode!");
+            let inputVal = document.getElementById("giftcodeInput").value.trim();
+            if (!inputVal) return alert("Vui lòng nhập mã giftcode!");
             
             let codes = cleanExpiredCodes();
-            let codeObj = codes[code];
+            let foundKey = Object.keys(codes).find(k => k.toLowerCase() === inputVal.toLowerCase());
 
-            if (!codeObj) {
+            if (!foundKey) {
                 return alert("❌ Mã Giftcode KHÔNG TỒN TẠI! Vui lòng kiểm tra lại.");
             }
+            let codeObj = codes[foundKey];
+
             if (Date.now() > codeObj.expiry) {
                 return alert("❌ Mã Giftcode đã hết hạn!");
             }
@@ -568,16 +579,16 @@
             }
 
             userData.usedCodes = userData.usedCodes || [];
-            if (userData.usedCodes.includes(code)) {
+            if (userData.usedCodes.includes(foundKey)) {
                 return alert("❌ Bạn đã nhập mã giftcode này rồi!");
             }
 
             const applyCode = () => {
                 codeObj.uses += 1;
-                codes[code] = codeObj;
+                codes[foundKey] = codeObj;
                 localStorage.setItem("mockCodes", JSON.stringify(codes));
 
-                userData.usedCodes.push(code);
+                userData.usedCodes.push(foundKey);
                 userData.gold += Number(codeObj.reward || 10000);
                 updateUI();
                 alert(`🎉 Nhập thành công! Nhận +${Number(codeObj.reward||10000).toLocaleString()} Vàng.`);
@@ -589,7 +600,7 @@
 
         function createGiftcode() {
             if (Number(telegramId) !== ADMIN_ID) return alert("Bạn không phải Admin!");
-            let code = document.getElementById('newCodeName').value.trim().toUpperCase();
+            let code = document.getElementById('newCodeName').value.trim();
             let maxUses = parseInt(document.getElementById('newCodeMaxUses').value || "30");
             let reward = parseInt(document.getElementById('newCodeReward').value || "10000");
 
