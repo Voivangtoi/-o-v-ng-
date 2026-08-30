@@ -44,22 +44,9 @@ const PORT =
     3000;
 
 
-const BOT_TOKEN =
-    process.env.TELEGRAM_BOT_TOKEN
-    ||
-    "8936202003:AAF6wn6ScMKhAERPeKf7NDdx4ptw1bAVk-4";
-
-
-const WEB_APP_URL =
-     process.env.WEB_APP_URL
-    ||
-    "https://voivangtoi.github.io/daovang/";
-
-
-const LINK4M_API_KEY =
-    process.env.LINK4M_API_KEY
-    ||
-    "6a8105012004f1159849220d";
+const BOT_TOKEN = "8936202003:AAF6wn6ScMKhAERPeKf7NDdx4ptw1bAVk-4";
+const WEB_APP_URL = "https://voivangtoi.github.io/daovang/";
+const LINK4M_API_KEY = "6a8105012004f1159849220d";
 
 
 /* =========================
