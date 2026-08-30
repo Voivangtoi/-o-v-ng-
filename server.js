@@ -51,7 +51,9 @@ const BOT_TOKEN =
 
 
 const WEB_APP_URL =
-    process.env.WEB_APP_URL;
+     process.env.WEB_APP_URL
+    ||
+    "https://voivangtoi.github.io/daovang/";
 
 
 const LINK4M_API_KEY =
