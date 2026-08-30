@@ -394,8 +394,8 @@
         const BOT_USERNAME = "BotDaoVang_bot";
         const AD_COOLDOWN = 15 * 60 * 1000;
 
-        // Thay blockId của Adsgram tại đây khi bạn lấy được từ dashboard Adsgram
-        const ADSGRAM_BLOCK_ID = "YOUR-ADSGRAM-BLOCK-ID";
+        // Block ID lấy trực tiếp từ giao diện Adsgram của bạn
+        const ADSGRAM_BLOCK_ID = "int-45281";
 
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
@@ -416,7 +416,7 @@
 
         const STORAGE_KEY = "goldGame_" + telegramId;
 
-        let userData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {
+        let userData = JSON.parse(localStorage.getItem(STORAGE_Key) || "null") || {
             gold: 0,
             vnd: 0,
             telegramId: telegramId,
@@ -536,23 +536,20 @@
             return codes;
         }
 
-        // Hàm gọi quảng cáo Adsgram chuẩn bị thay thế
+        // Tích hợp Adsgram chuẩn với BlockID int-45281
         function showAdsgram(onSuccessCallback) {
             if (window.Adsgram) {
                 const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
                 adController.show()
                     .then(() => {
-                        // Người dùng xem hết quảng cáo thành công
                         onSuccessCallback();
                     })
                     .catch((result) => {
-                        // Quảng cáo lỗi hoặc người dùng tắt trước khi hết
                         console.warn("Adsgram error or skipped:", result);
                         alert("⚠️ Bạn cần xem hết quảng cáo để nhận thưởng!");
                     });
             } else {
-                // Fallback nếu SDK chưa sẵn sàng hoặc chạy ngoài môi trường Telegram
-                console.warn("Adsgram SDK chưa được tải, gọi trực tiếp callback.");
+                console.warn("Adsgram SDK chưa sẵn sàng, gọi trực tiếp callback.");
                 onSuccessCallback();
             }
         }
@@ -591,7 +588,6 @@
                 document.getElementById("giftcodeInput").value = "";
             };
 
-            // Tích hợp Adsgram trước khi áp dụng mã
             showAdsgram(applyCode);
         }
 
@@ -828,7 +824,6 @@
                 alert(`🎉 Nhận thành công +${amount.toLocaleString()} ${type === 'gold' ? 'Vàng' : 'VNĐ'}`);
             };
 
-            // Gọi quảng cáo Adsgram trước khi cộng thưởng
             showAdsgram(executeAdReward);
         }
 
