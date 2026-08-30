@@ -394,7 +394,7 @@
         const BOT_USERNAME = "BotDaoVang_bot";
         const AD_COOLDOWN = 15 * 60 * 1000;
 
-        // Block ID lấy trực tiếp từ giao diện Adsgram của bạn
+        // Cố định Block ID chính xác để không bao giờ bị lỗi 'YOUR-ADSGRAM-BLOCK-ID'
         const ADSGRAM_BLOCK_ID = "int-45281";
 
         if (window.Telegram?.WebApp) {
@@ -416,7 +416,7 @@
 
         const STORAGE_KEY = "goldGame_" + telegramId;
 
-        let userData = JSON.parse(localStorage.getItem(STORAGE_Key) || "null") || {
+        let userData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {
             gold: 0,
             vnd: 0,
             telegramId: telegramId,
@@ -536,7 +536,7 @@
             return codes;
         }
 
-        // Tích hợp Adsgram chuẩn với BlockID int-45281
+        // Gọi Adsgram với BlockID chuẩn cố định
         function showAdsgram(onSuccessCallback) {
             if (window.Adsgram) {
                 const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
