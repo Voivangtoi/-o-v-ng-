@@ -6,7 +6,6 @@
     <title>Bot Đào Vàng Telegram</title>
     
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Adsgram SDK -->
     <script src="https://sad.adsgram.ai/js/sad.min.js" async></script>
 
     <style>
@@ -237,7 +236,7 @@
         <div class="card" id="miningCard" style="text-align: center; cursor: pointer;" onclick="toggleStatsButton()">
             <button class="btn-stats-toggle" id="btnStats" onclick="event.stopPropagation(); openStatsModal();">📊</button>
             <div class="card-title">Khu Vực Đào Vàng</div>
-            <p style="margin-bottom: 15px; font-size: 14px; color: #555;">Bấm bắt đầu để tự động đào trong 60 phút nhận 20.000 vàng.</p>
+            <p style="margin-bottom: 15px; font-size: 14px; color: #555;">Xem quảng cáo để bắt đầu tự động đào trong 60 phút nhận 20.000 vàng.</p>
             <div class="btn-row" onclick="event.stopPropagation();">
                 <button class="btn" id="startMiningBtn" onclick="startMining()">Bắt Đầu Đào</button>
                 <button class="btn btn-orange" onclick="openExchange()">Đổi Vàng Sang VNĐ</button>
@@ -393,9 +392,7 @@
         const ADMIN_ID = 7496441289;
         const BOT_USERNAME = "BotDaoVang_bot";
         const AD_COOLDOWN = 15 * 60 * 1000;
-
-        // Cố định Block ID chính xác để không bao giờ bị lỗi 'YOUR-ADSGRAM-BLOCK-ID'
-        const ADSGRAM_BLOCK_ID = "int-45281";
+        const ADSGRAM_BLOCK_ID = "45285";
 
         if (window.Telegram?.WebApp) {
             window.Telegram.WebApp.ready();
@@ -536,7 +533,6 @@
             return codes;
         }
 
-        // Gọi Adsgram với BlockID chuẩn cố định
         function showAdsgram(onSuccessCallback) {
             if (window.Adsgram) {
                 const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
@@ -836,9 +832,13 @@
 
         function startMining() {
             if (userData.miningEnd && userData.miningEnd > Date.now()) return;
-            userData.miningEnd = Date.now() + (60 * 60 * 1000);
-            saveUserData();
-            checkMiningProgress();
+            
+            showAdsgram(() => {
+                userData.miningEnd = Date.now() + (60 * 60 * 1000);
+                saveUserData();
+                checkMiningProgress();
+                alert("🎉 Xem quảng cáo thành công! Đã bắt đầu tiến trình đào vàng.");
+            });
         }
 
         function checkMiningProgress() {
