@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bot Đào Vàng Telegram</title>
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Adsgram SDK -->
+    <script src="https://sad.adsgram.ai/js/sad.min.js" async></script>
+
+    <style>
+        :root {
+            --bg-color: #f5f0e6;
+            --main-brown: #5c3a21;
+            --accent-orange: #d97706;
+            --card-bg: #fffdf9;
+            --btn-green: #16a34a;
+            --text-dark: #292524;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-dark); padding-bottom: 70px; }
+        
+        .header {
+            background-color: var(--main-brown);
+            color: white;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .stats-bar {
+            display: flex;
+            gap: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 13px;
+        }
+
+        .page { display: none; padding: 15px; }
+        .page.active { display: block; }
+
+        .card {
+            background: var(--card-bg);
+            border: 2px solid #e7d7c1;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+        .card-title { font-size: 15px; font-weight: bold; color: var(--main-brown); margin-bottom: 10px; }
+
+        input, select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e7d7c1;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            font-size: 14px;
+            background: #fff;
+        }
+        .btn {
+            background-color: var(--btn-green);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 15px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .btn:disabled {
+            background-color: #a8a29e !important;
+            cursor: not-allowed;
+        }
+        .btn-orange { background-color: var(--accent-orange); }
+        .btn-red { background-color: #dc2626; }
+        .btn-row { display: flex; gap: 10px; }
+
+        .task-grid { display: flex; gap: 10px; margin-bottom: 10px; }
+        .task-box {
+            flex: 1;
+            background: #fff;
+            border: 2px solid #e7d7c1;
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .task-box:hover { border-color: var(--accent-orange); }
+        
+        .task-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            border: 2px solid #e7d7c1;
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+
+        .btn-stats-toggle {
+            display: none;
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: #fef3c7;
+            border: 1px solid var(--accent-orange);
+            font-size: 18px;
+            padding: 4px 8px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-content {
+            background: #fff;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 18px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--main-brown);
+            border-bottom: 2px solid #f3f4f6;
+            padding-bottom: 10px;
+            margin-bottom: 12px;
+        }
+        .modal-close {
+            background: #f3f4f6;
+            border: none;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .user-item-card {
+            background: #fffdf9;
+            border: 1px solid #e7d7c1;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+
+        #bannedScreen {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #111827;
+            color: #ef4444;
+            z-index: 9999;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .nav-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background: white;
+            border-top: 2px solid #e7d7c1;
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 1000;
+        }
+        .nav-item {
+            text-align: center;
+            font-size: 11px;
+            color: #78716c;
+            cursor: pointer;
+            flex: 1;
+        }
+        .nav-item.active { color: var(--accent-orange); font-weight: bold; }
+        .nav-item div:first-child { font-size: 18px; margin-bottom: 2px; }
+        
+        .progress-tag {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="bannedScreen">
+        <div style="font-size: 50px; margin-bottom: 10px;">🚫</div>
+        <h2>TÀI KHOẢN ĐÃ BỊ KHÓA</h2>
+        <p style="color: #9ca3af; margin-top: 10px; font-size: 14px;">Tài khoản của bạn đã bị Admin đình chỉ hoạt động.</p>
+    </div>
+
+    <div class="header">
+        <span>🔨 Mỏ Vàng Telegram</span>
+        <div class="stats-bar">
+            <span>🪙 <span id="goldCount">0</span></span>
+            <span>💵 <span id="vndCount">0</span> VNĐ</span>
+        </div>
+    </div>
+
+    <div id="page1" class="page active">
+        <div class="card" id="miningCard" style="text-align: center; cursor: pointer;" onclick="toggleStatsButton()">
+            <button class="btn-stats-toggle" id="btnStats" onclick="event.stopPropagation(); openStatsModal();">📊</button>
+            <div class="card-title">Khu Vực Đào Vàng</div>
+            <p style="margin-bottom: 15px; font-size: 14px; color: #555;">Bấm bắt đầu để tự động đào trong 60 phút nhận 20.000 vàng.</p>
+            <div class="btn-row" onclick="event.stopPropagation();">
+                <button class="btn" id="startMiningBtn" onclick="startMining()">Bắt Đầu Đào</button>
+                <button class="btn btn-orange" onclick="openExchange()">Đổi Vàng Sang VNĐ</button>
+            </div>
+            <p id="miningStatus" style="margin-top: 10px; font-weight: bold; color: var(--accent-orange);"></p>
+        </div>
+        <div class="card">
+            <div class="card-title">Quy Tắc Đổi Thưởng</div>
+            <p style="font-size: 13px; line-height: 1.5;">
+                - Tỷ giá quy đổi: <b>20.000.000 Vàng = 2.000 VNĐ</b>.<br>
+                - Số lượng đổi tối thiểu: <b>20.000.000 Vàng</b>.
+            </p>
+        </div>
+    </div>
+
+    <div id="page2" class="page">
+        <div class="card">
+            <div class="card-title">Phiếu Vật Phẩm (Giftcode)</div>
+            <input type="text" id="giftcodeInput" placeholder="Nhập mã giftcode chính xác...">
+            <button class="btn" onclick="useGiftcode()">Sử Dụng</button>
+        </div>
+
+        <div class="card" id="adminSection" style="display:none; border-color: var(--accent-orange);">
+            <div class="card-title">⚙️ Quản Lý Admin</div>
+            
+            <div style="font-weight: bold; font-size: 13px; margin-bottom: 5px; color: var(--main-brown);">1. Tạo Giftcode:</div>
+            <input type="text" id="newCodeName" placeholder="Tên mã code (VD: VIP2026)">
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="newCodeMaxUses" placeholder="Giới hạn nhập (VD: 30)" min="1">
+                <input type="number" id="newCodeReward" placeholder="Số vàng mỗi người nhận (VD: 10000)" min="1">
+            </div>
+            <button class="btn btn-orange" style="margin-bottom: 15px;" onclick="createGiftcode()">Tạo Giftcode (Tự xóa sau 24h)</button>
+
+            <div style="border-top: 2px dashed #e7d7c1; padding-top: 10px; margin-top: 10px;">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 5px; color: var(--btn-green);">2. Thêm Nhiệm Vụ Tham Gia Nhóm Telegram:</div>
+                <input type="text" id="adminTaskTitle" placeholder="Tên nhiệm vụ (VD: Tham Gia Group Săn Airdrop)">
+                <input type="text" id="adminTaskLink" placeholder="Link Telegram (VD: https://t.me/SEIRBNXNV)">
+                <input type="number" id="adminTaskReward" placeholder="Số vàng nhận (VD: 15000)">
+                <button class="btn" style="margin-bottom: 15px;" onclick="createAdminTask()">Thêm Nhiệm Vụ Mới</button>
+            </div>
+            
+            <div style="border-top: 2px dashed #e7d7c1; padding-top: 10px; margin-top: 10px;">
+                <div style="font-weight: bold; font-size: 13px; margin-bottom: 5px; color: #dc2626;">3. Khóa / Mở Khóa Tài Khoản:</div>
+                <input type="number" id="lockUserIdInput" placeholder="Nhập ID Telegram cần Khóa/Mở khóa">
+                <button class="btn btn-red" onclick="toggleLockUser()">Khoá / Mở Khoá ID</button>
+            </div>
+
+            <div id="adminCodeList" style="margin-top: 15px; font-size: 12px; color: #444; background: #fff8f0; padding: 10px; border-radius: 8px;"></div>
+        </div>
+    </div>
+
+    <div id="page3" class="page">
+        <div class="card" style="border-color: var(--accent-orange);">
+            <div class="card-title">🤝 Mốc Thưởng Mời Bạn Bè</div>
+            <p style="font-size: 13px; margin-bottom: 10px; line-height: 1.5;">
+                Mời bạn bè thành công để nhận thưởng theo mốc (Nhân hệ số 20.000 Vàng mỗi mốc).
+            </p>
+            <div id="milestoneListContainer"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📢 Nhiệm Vụ Cộng Đồng Telegram</div>
+            <div id="dynamicAdminTasksList"></div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📺 Xem Quảng Cáo Adsgram</div>
+            <div class="task-grid">
+                <div class="task-box" onclick="doAdTask(3000, 'gold')">
+                    <div style="font-size: 20px; margin-bottom: 5px;">📄</div>
+                    <div style="font-weight: bold; font-size: 13px;">Nhận Vàng</div>
+                    <div style="color: var(--btn-green); font-weight: bold; margin-top: 4px;">+3.000</div>
+                </div>
+                <div class="task-box" onclick="doAdTask(1, 'vnd')">
+                    <div style="font-size: 20px; margin-bottom: 5px;">⚙️</div>
+                    <div style="font-weight: bold; font-size: 13px;">Nhận VNĐ</div>
+                    <div style="color: var(--accent-orange); font-weight: bold; margin-top: 4px;">+1 VNĐ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="page4" class="page">
+        <div class="card">
+            <div class="card-title">Hệ Thống Chiêu Mộ Thợ Mới</div>
+            <p style="font-size: 13px; margin-bottom: 10px;">Mời bạn bè tham gia để nhận thưởng khủng theo mốc!</p>
+            <input type="text" id="refLink" readonly value="Đang tạo link...">
+            <button class="btn" onclick="copyRef()">Sao Chép Link Giới Thiệu</button>
+        </div>
+
+        <div class="card">
+            <div class="card-title">📌 ĐIỀU KIỆN REF ĐƯỢC DUYỆT</div>
+            <div style="font-size: 12px; color: #444; line-height: 1.6;">
+                Người bạn mời vào sẽ ở trạng thái <b>Chờ Duyệt</b>. Ref sẽ chính thức được duyệt khi đạt đủ:
+                <br>• <b>Đăng nhập hoạt động đủ 3 ngày</b>.
+                <br>• <b>Xem đủ 6 Quảng cáo/Video</b>.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-title">👥 Danh Sách Ref Của Bạn</div>
+            <div id="refPendingList" style="font-size: 13px;"></div>
+        </div>
+    </div>
+
+    <div id="page5" class="page">
+        <div class="card">
+            <div class="card-title">Hệ Thống Rút Tiền Mỏ Vàng</div>
+            <label style="font-size: 12px; font-weight: bold;">TÊN NGÂN HÀNG</label>
+            <select id="bankName">
+                <option value="">-- Chọn ngân hàng --</option>
+                <option value="MB">MBBank (MB)</option>
+                <option value="VCB">Vietcombank (VCB)</option>
+                <option value="TCB">Techcombank (TCB)</option>
+            </select>
+            <label style="font-size: 12px; font-weight: bold;">STK</label>
+            <input type="text" id="bankAcc" placeholder="Nhập số tài khoản...">
+            <label style="font-size: 12px; font-weight: bold;">TÊN TÀI KHOẢN</label>
+            <input type="text" id="bankOwner" placeholder="NGUYEN VAN A">
+            <label style="font-size: 12px; font-weight: bold;">SỐ TIỀN VNĐ MUỐN RÚT</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="withdrawVnd" placeholder="0">
+                <button class="btn btn-orange" style="width: 120px; height: 45px;" onclick="setAllVnd()">TẤT CẢ</button>
+            </div>
+            <button class="btn" style="margin-top:10px;" onclick="submitWithdraw()">XÁC NHẬN RÚT TIỀN</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="statsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>📊 Thống Kê & Bảng Xếp Hạng</span>
+                <button class="modal-close" onclick="closeStatsModal()">✕</button>
+            </div>
+            <div style="display: flex; gap: 5px; margin-bottom: 12px;">
+                <button class="btn" id="tabBtnRank" style="padding: 8px; font-size: 12px;" onclick="showStatsTab('rank')">🏆 Xếp Hạng</button>
+                <button class="btn btn-orange" id="tabBtnUsers" style="padding: 8px; font-size: 12px;" onclick="showStatsTab('users')">👥 Ref & IP Thiết Bị</button>
+            </div>
+            <div id="statsTabRank"><div id="leaderboardList"></div></div>
+            <div id="statsTabUsers" style="display: none;"><div id="usersList"></div></div>
+        </div>
+    </div>
+
+    <div class="nav-bar">
+        <div class="nav-item active" onclick="switchTab(1)"><div>⛏️</div>Đào Vàng</div>
+        <div class="nav-item" onclick="switchTab(2)"><div>🎁</div>Vật Phẩm</div>
+        <div class="nav-item" onclick="switchTab(3)"><div>📋</div>Công Việc</div>
+        <div class="nav-item" onclick="switchTab(4)"><div>👥</div>Tuyển Dụng</div>
+        <div class="nav-item" onclick="switchTab(5)"><div>💵</div>Rút Tiền</div>
+    </div>
+
+    <script>
+        const ADMIN_ID = 7496441289;
+        const BOT_USERNAME = "BotDaoVang_bot";
+        const AD_COOLDOWN = 15 * 60 * 1000;
+
+        // Thay blockId của Adsgram tại đây khi bạn lấy được từ dashboard Adsgram
+        const ADSGRAM_BLOCK_ID = "YOUR-ADSGRAM-BLOCK-ID";
+
+        if (window.Telegram?.WebApp) {
+            window.Telegram.WebApp.ready();
+            window.Telegram.WebApp.expand();
+        }
+
+        let savedTgId = localStorage.getItem("myFixedTelegramId");
+        if (!savedTgId) {
+            savedTgId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id 
+                ? String(window.Telegram.WebApp.initDataUnsafe.user.id) 
+                : String(Math.floor(100000 + Math.random() * 900000));
+            localStorage.setItem("myFixedTelegramId", savedTgId);
+        }
+        const telegramId = Number(savedTgId);
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const refInviter = urlParams.get('start') ? Number(urlParams.get('start')) : null;
+
+        const STORAGE_KEY = "goldGame_" + telegramId;
+
+        let userData = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null") || {
+            gold: 0,
+            vnd: 0,
+            telegramId: telegramId,
+            invitedBy: (refInviter && refInviter !== telegramId) ? refInviter : null,
+            ip: "Đang kiểm tra...",
+            miningEnd: 0,
+            refCount: 0,
+            activeDays: [],
+            adsWatchedCount: 0,
+            completedTasks: [],
+            claimedMilestones: [],
+            usedCodes: [],
+            adCooldowns: {}
+        };
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        userData.activeDays = userData.activeDays || [];
+        if (!userData.activeDays.includes(todayStr)) {
+            userData.activeDays.push(todayStr);
+        }
+
+        function saveUserData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(userData));
+            syncToDatabase();
+        }
+
+        async function fetchUserIP() {
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                if (data && data.ip) {
+                    userData.ip = data.ip;
+                    saveUserData();
+                }
+            } catch (e) {
+                userData.ip = userData.ip || "192.168.1.1";
+                saveUserData();
+            }
+        }
+        fetchUserIP();
+
+        function syncToDatabase() {
+            let db = JSON.parse(localStorage.getItem("gameUserDatabase") || "{}");
+            db[telegramId] = {
+                id: telegramId,
+                gold: userData.gold,
+                vnd: userData.vnd,
+                invitedBy: userData.invitedBy || null,
+                activeDaysCount: userData.activeDays ? userData.activeDays.length : 1,
+                adsWatchedCount: userData.adsWatchedCount || 0,
+                ip: userData.ip || "Chưa xác định"
+            };
+            localStorage.setItem("gameUserDatabase", JSON.stringify(db));
+        }
+
+        function checkBannedStatus() {
+            let bannedList = JSON.parse(localStorage.getItem("bannedUserIds") || "[]");
+            if (bannedList.includes(Number(telegramId))) {
+                document.getElementById('bannedScreen').style.display = 'flex';
+            } else {
+                document.getElementById('bannedScreen').style.display = 'none';
+            }
+        }
+
+        function updateUI() {
+            checkBannedStatus();
+            document.getElementById('goldCount').innerText = Number(userData.gold || 0).toLocaleString();
+            document.getElementById('vndCount').innerText = Number(userData.vnd || 0).toLocaleString();
+            
+            document.getElementById('refLink').value = `https://t.me/${BOT_USERNAME}?start=${telegramId}`;
+
+            const isAdmin = (Number(telegramId) === ADMIN_ID);
+            document.getElementById('adminSection').style.display = isAdmin ? 'block' : 'none';
+            if (isAdmin) {
+                renderAdminCodeList();
+            }
+
+            renderAdminTasks();
+            renderPendingRefList();
+            renderMilestones();
+            saveUserData();
+        }
+
+        function toggleStatsButton() {
+            const btn = document.getElementById('btnStats');
+            btn.style.display = (btn.style.display === 'inline-block') ? 'none' : 'inline-block';
+        }
+
+        function openStatsModal() {
+            document.getElementById('statsModal').classList.add('active');
+            renderLeaderboard();
+            renderUsersList();
+        }
+        function closeStatsModal() { document.getElementById('statsModal').classList.remove('active'); }
+
+        function showStatsTab(tab) {
+            if (tab === 'rank') {
+                document.getElementById('statsTabRank').style.display = 'block';
+                document.getElementById('statsTabUsers').style.display = 'none';
+            } else {
+                document.getElementById('statsTabRank').style.display = 'none';
+                document.getElementById('statsTabUsers').style.display = 'block';
+            }
+        }
+
+        function cleanExpiredCodes() {
+            let codes = JSON.parse(localStorage.getItem("mockCodes") || "{}");
+            let now = Date.now();
+            let hasChanged = false;
+            for (let code in codes) {
+                if (codes[code].expiry && now > codes[code].expiry) {
+                    delete codes[code];
+                    hasChanged = true;
+                }
+            }
+            if (hasChanged) localStorage.setItem("mockCodes", JSON.stringify(codes));
+            return codes;
+        }
+
+        // Hàm gọi quảng cáo Adsgram chuẩn bị thay thế
+        function showAdsgram(onSuccessCallback) {
+            if (window.Adsgram) {
+                const adController = window.Adsgram.init({ blockId: ADSGRAM_BLOCK_ID });
+                adController.show()
+                    .then(() => {
+                        // Người dùng xem hết quảng cáo thành công
+                        onSuccessCallback();
+                    })
+                    .catch((result) => {
+                        // Quảng cáo lỗi hoặc người dùng tắt trước khi hết
+                        console.warn("Adsgram error or skipped:", result);
+                        alert("⚠️ Bạn cần xem hết quảng cáo để nhận thưởng!");
+                    });
+            } else {
+                // Fallback nếu SDK chưa sẵn sàng hoặc chạy ngoài môi trường Telegram
+                console.warn("Adsgram SDK chưa được tải, gọi trực tiếp callback.");
+                onSuccessCallback();
+            }
+        }
+
+        function useGiftcode() {
+            let code = document.getElementById("giftcodeInput").value.trim().toUpperCase();
+            if (!code) return alert("Vui lòng nhập mã giftcode!");
+            
+            let codes = cleanExpiredCodes();
+            let codeObj = codes[code];
+
+            if (!codeObj) {
+                return alert("❌ Mã Giftcode KHÔNG TỒN TẠI! Vui lòng kiểm tra lại.");
+            }
+            if (Date.now() > codeObj.expiry) {
+                return alert("❌ Mã Giftcode đã hết hạn!");
+            }
+            if (codeObj.uses >= codeObj.maxUses) {
+                return alert("❌ Mã Giftcode đã hết lượt sử dụng!");
+            }
+
+            userData.usedCodes = userData.usedCodes || [];
+            if (userData.usedCodes.includes(code)) {
+                return alert("❌ Bạn đã nhập mã giftcode này rồi!");
+            }
+
+            const applyCode = () => {
+                codeObj.uses += 1;
+                codes[code] = codeObj;
+                localStorage.setItem("mockCodes", JSON.stringify(codes));
+
+                userData.usedCodes.push(code);
+                userData.gold += Number(codeObj.reward || 10000);
+                updateUI();
+                alert(`🎉 Nhập thành công! Nhận +${Number(codeObj.reward||10000).toLocaleString()} Vàng.`);
+                document.getElementById("giftcodeInput").value = "";
+            };
+
+            // Tích hợp Adsgram trước khi áp dụng mã
+            showAdsgram(applyCode);
+        }
+
+        function createGiftcode() {
+            if (Number(telegramId) !== ADMIN_ID) return alert("Bạn không phải Admin!");
+            let code = document.getElementById('newCodeName').value.trim().toUpperCase();
+            let maxUses = parseInt(document.getElementById('newCodeMaxUses').value || "30");
+            let reward = parseInt(document.getElementById('newCodeReward').value || "10000");
+
+            if (!code) return alert("Vui lòng nhập tên mã code!");
+            let codes = cleanExpiredCodes();
+            codes[code] = { uses: 0, maxUses: maxUses, reward: reward, expiry: Date.now() + 24*60*60*1000 };
+            localStorage.setItem("mockCodes", JSON.stringify(codes));
+            alert(`Tạo mã [${code}] thành công! Lượt nhập: ${maxUses}, Thưởng: ${reward.toLocaleString()} Vàng. Tự xóa sau 24h.`);
+            document.getElementById('newCodeName').value = "";
+            document.getElementById('newCodeMaxUses').value = "";
+            document.getElementById('newCodeReward').value = "";
+            renderAdminCodeList();
+        }
+
+        function renderAdminCodeList() {
+            const listDiv = document.getElementById('adminCodeList');
+            if (!listDiv || Number(telegramId) !== ADMIN_ID) return;
+            let codes = cleanExpiredCodes();
+            let keys = Object.keys(codes);
+            if (keys.length === 0) {
+                listDiv.innerHTML = "<i>Chưa có giftcode nào đang hoạt động.</i>";
+                return;
+            }
+            let html = "<b>📜 Danh sách Code Active:</b><br>";
+            keys.forEach(c => {
+                let item = codes[c];
+                html += `• <b>${c}</b>: +${(item.reward).toLocaleString()} Vàng | Đã dùng: ${item.uses}/${item.maxUses}<br>`;
+            });
+            listDiv.innerHTML = html;
+        }
+
+        function createAdminTask() {
+            if (Number(telegramId) !== ADMIN_ID) return alert("Bạn không phải Admin!");
+            let title = document.getElementById('adminTaskTitle').value.trim();
+            let link = document.getElementById('adminTaskLink').value.trim();
+            let reward = parseInt(document.getElementById('adminTaskReward').value || "15000");
+
+            if (!title || !link) return alert("Vui lòng nhập đủ tên và link nhiệm vụ!");
+
+            let adminTasks = JSON.parse(localStorage.getItem("adminTgTasks") || "[]");
+            let newTask = {
+                id: "task_" + Date.now(),
+                title: title,
+                link: link,
+                reward: reward
+            };
+            adminTasks.push(newTask);
+            localStorage.setItem("adminTgTasks", JSON.stringify(adminTasks));
+            alert("✅ Đã thêm nhiệm vụ cộng đồng mới!");
+            document.getElementById('adminTaskTitle').value = "";
+            document.getElementById('adminTaskLink').value = "";
+            document.getElementById('adminTaskReward').value = "";
+            updateUI();
+        }
+
+        function renderAdminTasks() {
+            let adminTasks = JSON.parse(localStorage.getItem("adminTgTasks") || "[]");
+            let tasksContainer = document.getElementById('dynamicAdminTasksList');
+            if (!tasksContainer) return;
+
+            if (adminTasks.length === 0) {
+                tasksContainer.innerHTML = "<div style='font-size:12px; color:#666;'>Hiện chưa có nhiệm vụ mới từ Admin.</div>";
+                return;
+            }
+
+            userData.completedTasks = userData.completedTasks || [];
+            let html = "";
+            adminTasks.forEach(t => {
+                let isDone = userData.completedTasks.includes(t.id);
+                html += `
+                <div class="task-item-row">
+                    <div>
+                        <div style="font-weight: bold; font-size: 13px;">${t.title}</div>
+                        <div style="font-size: 12px; color: #16a34a;">+${t.reward.toLocaleString()} Vàng</div>
+                    </div>
+                    <div style="display: flex; gap: 5px;">
+                        <button class="btn btn-orange" style="padding: 6px 10px; font-size: 11px;" onclick="window.open('${t.link}', '_blank')">Mở Link</button>
+                        <button class="btn" style="padding: 6px 10px; font-size: 11px;" ${isDone ? 'disabled' : ''} onclick="claimAdminTask('${t.id}', ${t.reward})">
+                            ${isDone ? 'Đã Nhận' : 'Xác Nhận'}
+                        </button>
+                    </div>
+                </div>`;
+            });
+            tasksContainer.innerHTML = html;
+        }
+
+        function claimAdminTask(taskId, reward) {
+            userData.completedTasks = userData.completedTasks || [];
+            if (userData.completedTasks.includes(taskId)) return;
+
+            userData.completedTasks.push(taskId);
+            userData.gold += reward;
+            updateUI();
+            alert(`🎉 Xác nhận thành công! Nhận +${reward.toLocaleString()} Vàng.`);
+        }
+
+        function getQualifiedRefCount() {
+            let db = JSON.parse(localStorage.getItem("gameUserDatabase") || "{}");
+            let usersArray = Object.values(db);
+            let myRefs = usersArray.filter(u => Number(u.invitedBy) === Number(telegramId));
+            
+            let count = 0;
+            myRefs.forEach(r => {
+                let days = r.activeDaysCount || 1;
+                let ads = r.adsWatchedCount || 0;
+                if (days >= 3 && ads >= 6) {
+                    count++;
+                }
+            });
+            return count;
+        }
+
+        function renderMilestones() {
+            const container = document.getElementById('milestoneListContainer');
+            if (!container) return;
+
+            const milestones = [
+                { target: 5 },
+                { target: 10 },
+                { target: 20 },
+                { target: 40 },
+                { target: 60 },
+                { target: 100 }
+            ];
+
+            let qualifiedCount = getQualifiedRefCount();
+            userData.claimedMilestones = userData.claimedMilestones || [];
+
+            let html = "";
+            milestones.forEach(m => {
+                let reward = m.target * 20000;
+                let isCompleted = qualifiedCount >= m.target;
+                let isClaimed = userData.claimedMilestones.includes(m.target);
+
+                let btnText = "Chưa Đạt";
+                let btnStyle = "background-color: #a8a29e;";
+                let isDisabled = true;
+
+                if (isClaimed) {
+                    btnText = "Đã Nhận";
+                    btnStyle = "background-color: #16a34a;";
+                } else if (isCompleted) {
+                    btnText = "Nhận Thưởng";
+                    btnStyle = "background-color: var(--accent-orange);";
+                    isDisabled = false;
+                }
+
+                html += `
+                <div class="task-item-row">
+                    <div>
+                        <div style="font-weight: bold; font-size: 13px;">Mời ${m.target} Người (${qualifiedCount}/${m.target})</div>
+                        <div style="font-size: 12px; color: #16a34a;">+${reward.toLocaleString()} Vàng</div>
+                    </div>
+                    <div>
+                        <button class="btn" style="padding: 6px 12px; font-size: 11px; ${btnStyle}" ${isDisabled ? 'disabled' : ''} onclick="claimMilestone(${m.target}, ${reward})">
+                            ${btnText}
+                        </button>
+                    </div>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function claimMilestone(target, reward) {
+            userData.claimedMilestones = userData.claimedMilestones || [];
+            if (userData.claimedMilestones.includes(target)) return;
+
+            let qualifiedCount = getQualifiedRefCount();
+            if (qualifiedCount < target) return alert("Bạn chưa đạt đủ số lượng ref yêu cầu!");
+
+            userData.claimedMilestones.push(target);
+            userData.gold += reward;
+            updateUI();
+            alert(`🎉 Nhận thưởng mốc ${target} người thành công! +${reward.toLocaleString()} Vàng.`);
+        }
+
+        function renderPendingRefList() {
+            let db = JSON.parse(localStorage.getItem("gameUserDatabase") || "{}");
+            let usersArray = Object.values(db);
+            let myRefs = usersArray.filter(u => Number(u.invitedBy) === Number(telegramId));
+            let listContainer = document.getElementById('refPendingList');
+            if (!listContainer) return;
+
+            if (myRefs.length === 0) {
+                listContainer.innerHTML = "<i>Bạn chưa mời được thợ nào. Hãy gửi link cho bạn bè!</i>";
+                return;
+            }
+
+            let html = "";
+            myRefs.forEach((r, idx) => {
+                let days = r.activeDaysCount || 1;
+                let ads = r.adsWatchedCount || 0;
+
+                let isQualified = (days >= 3 && ads >= 6);
+
+                html += `
+                <div style="background:#fff; border:1px solid #e7d7c1; border-radius:8px; padding:10px; margin-bottom:8px;">
+                    <div style="display:flex; justify-content:space-between; font-weight:bold;">
+                        <span>Thợ #${idx+1} (ID: ${r.id})</span>
+                        <span style="color:${isQualified ? '#16a34a' : '#d97706'}">
+                            ${isQualified ? '✅ ĐÃ ĐẠT ĐIỀU KIỆN' : '⏳ CHỜ HOÀN THÀNH'}
+                        </span>
+                    </div>
+                    <div style="margin-top:6px; font-size:11px; display:flex; gap:6px; flex-wrap:wrap;">
+                        <span class="progress-tag">📅 Ng: ${days}/3 ngày</span>
+                        <span class="progress-tag">📺 Ads: ${ads}/6 video</span>
+                    </div>
+                </div>`;
+            });
+
+            listContainer.innerHTML = html;
+        }
+
+        function doAdTask(amount, type) {
+            userData.adCooldowns = userData.adCooldowns || {};
+            if ((userData.adCooldowns[type] || 0) > Date.now()) {
+                return alert("Vui lòng chờ hết thời gian đếm ngược giữa các lần xem quảng cáo!");
+            }
+
+            const executeAdReward = () => {
+                if (type === 'gold') userData.gold += amount;
+                if (type === 'vnd') userData.vnd += amount;
+                
+                userData.adCooldowns[type] = Date.now() + AD_COOLDOWN;
+                userData.adsWatchedCount = (userData.adsWatchedCount || 0) + 1;
+
+                updateUI();
+                alert(`🎉 Nhận thành công +${amount.toLocaleString()} ${type === 'gold' ? 'Vàng' : 'VNĐ'}`);
+            };
+
+            // Gọi quảng cáo Adsgram trước khi cộng thưởng
+            showAdsgram(executeAdReward);
+        }
+
+        function copyRef() {
+            const linkInput = document.getElementById('refLink');
+            linkInput.select();
+            document.execCommand('copy');
+            alert("Đã sao chép link giới thiệu!");
+        }
+
+        function startMining() {
+            if (userData.miningEnd && userData.miningEnd > Date.now()) return;
+            userData.miningEnd = Date.now() + (60 * 60 * 1000);
+            saveUserData();
+            checkMiningProgress();
+        }
+
+        function checkMiningProgress() {
+            const btn = document.getElementById('startMiningBtn');
+            const status = document.getElementById('miningStatus');
+            const now = Date.now();
+
+            if (userData.miningEnd && userData.miningEnd > now) {
+                btn.disabled = true;
+                const remainingSec = Math.ceil((userData.miningEnd - now) / 1000);
+                status.innerText = `Đang tự đào... Còn ${Math.floor(remainingSec / 60)} phút ${remainingSec % 60}s`;
+            } else if (userData.miningEnd && userData.miningEnd <= now) {
+                userData.gold += 20000;
+                userData.miningEnd = 0;
+                btn.disabled = false;
+                status.innerText = "🎉 Hoàn thành lượt đào! Nhận 20.000 Vàng.";
+                updateUI();
+            } else {
+                btn.disabled = false;
+                status.innerText = "";
+            }
+        }
+        setInterval(checkMiningProgress, 1000);
+
+        function openExchange() {
+            if (userData.gold < 20000000) return alert("Cần tối thiểu 20.000.000 Vàng để đổi!");
+            let exchangeVnd = Math.floor(userData.gold / 10000);
+            userData.vnd += exchangeVnd;
+            userData.gold -= (exchangeVnd * 10000);
+            updateUI();
+            alert(`Đổi thành công ${exchangeVnd.toLocaleString()} VNĐ!`);
+        }
+
+        function setAllVnd() { document.getElementById('withdrawVnd').value = userData.vnd; }
+
+        function submitWithdraw() {
+            let bank = document.getElementById('bankName').value;
+            let acc = document.getElementById('bankAcc').value.trim();
+            let owner = document.getElementById('bankOwner').value.trim();
+            let vndVal = parseInt(document.getElementById('withdrawVnd').value || 0);
+
+            if (!bank || !acc || !owner || vndVal < 20000 || userData.vnd < vndVal) return alert("Thông tin rút tiền không hợp lệ!");
+            userData.vnd -= vndVal;
+            updateUI();
+            alert("Đã gửi yêu cầu rút tiền cho Admin!");
+        }
+
+        function switchTab(index) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('page' + index).classList.add('active');
+            document.querySelectorAll('.nav-item')[index - 1].classList.add('active');
+        }
+
+        function toggleLockUser() {
+            if (Number(telegramId) !== ADMIN_ID) return alert("Bạn không phải Admin!");
+            let targetId = Number(document.getElementById('lockUserIdInput').value);
+            if (!targetId) return alert("Vui lòng nhập ID hợp lệ!");
+
+            let bannedList = JSON.parse(localStorage.getItem("bannedUserIds") || "[]");
+            let index = bannedList.indexOf(targetId);
+
+            if (index > -1) {
+                bannedList.splice(index, 1);
+                alert(`✅ Đã MỞ KHÓA ID: ${targetId}`);
+            } else {
+                bannedList.push(targetId);
+                alert(`🔒 Đã KHÓA ID: ${targetId}`);
+            }
+            localStorage.setItem("bannedUserIds", JSON.stringify(bannedList));
+            document.getElementById('lockUserIdInput').value = "";
+            updateUI();
+        }
+
+        function renderLeaderboard() {
+            let db = JSON.parse(localStorage.getItem("gameUserDatabase") || "{}");
+            let usersArray = Object.values(db).sort((a, b) => b.gold - a.gold);
+            let html = "";
+            usersArray.forEach((u, index) => {
+                let badge = index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`;
+                html += `
+                <div class="user-item-card">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span><b>${badge} ID: ${u.id}</b></span>
+                        <span style="color:var(--btn-green); font-weight:bold;">🪙 ${(u.gold||0).toLocaleString()} Vàng</span>
+                    </div>
+                </div>`;
+            });
+            document.getElementById('leaderboardList').innerHTML = html;
+        }
+
+        function renderUsersList() {
+            let db = JSON.parse(localStorage.getItem("gameUserDatabase") || "{}");
+            let usersArray = Object.values(db);
+            let html = "";
+            usersArray.forEach(u => {
+                html += `
+                <div class="user-item-card">
+                    <div><b>👤 ID: ${u.id}</b> | IP: <code>${u.ip||'N/A'}</code></div>
+                </div>`;
+            });
+            document.getElementById('usersList').innerHTML = html;
+        }
+
+        updateUI();
+        checkMiningProgress();
+    </script>
+</body>
+</html>
