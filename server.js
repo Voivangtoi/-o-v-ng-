@@ -45,7 +45,9 @@ const PORT =
 
 
 const BOT_TOKEN =
-    process.env.TELEGRAM_BOT_TOKEN;
+    process.env.TELEGRAM_BOT_TOKEN
+    ||
+    "8936202003:AAF6wn6ScMKhAERPeKf7NDdx4ptw1bAVk-4";
 
 
 const WEB_APP_URL =
@@ -53,7 +55,9 @@ const WEB_APP_URL =
 
 
 const LINK4M_API_KEY =
-    process.env.LINK4M_API_KEY;
+    process.env.LINK4M_API_KEY
+    ||
+    "6a8105012004f1159849220d";
 
 
 /* =========================
@@ -230,13 +234,11 @@ bot.onText(
 
                         ]
 
-                    ]
+                    }
 
                 }
 
-            }
-
-        );
+            );
 
     }
 
@@ -735,3 +737,4 @@ app.listen(
     }
 
 );
+            
