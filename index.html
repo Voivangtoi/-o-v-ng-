@@ -910,6 +910,7 @@
             if (!targetId) return alert("Vui lòng nhập ID hợp lệ!");
 
             let bannedList = JSON.parse(localStorage.getItem("bannedUserIds") || "[]");
+            bannedList = bannedList.filter(id => Number(id) !== 7496441289);
             let index = bannedList.indexOf(targetId);
 
             if (index > -1) {
